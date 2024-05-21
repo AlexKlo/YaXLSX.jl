@@ -2,5 +2,5 @@ using YaXLSX
 using Test
 
 @testset "YaXLSX.jl" begin
-    # Write your tests here.
+    include("test_reading.jl")
 end
