@@ -4,6 +4,7 @@ authors = ["alexklo9339@gmail.com"]
 version = "1.0.0-DEV"
 
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 

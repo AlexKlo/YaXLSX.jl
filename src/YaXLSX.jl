@@ -1,6 +1,6 @@
 module YaXLSX
 
-using ZipFile, EzXML
+using ZipFile, EzXML, DataFrames
 
 export parse_xlsx, ExcelBook
 

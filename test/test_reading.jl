@@ -22,4 +22,16 @@
             xlsx_book = parse_xlsx(read("data/without_workbook.xlsx"))
         end
     end
+
+    @testset "Case №4: Check ExcelSheet data" begin
+        xlsx_book_bytes = parse_xlsx(read("data/simple_book.xlsx"))
+
+        sheet = xlsx_book_bytes.sheets[1]
+
+        @test sheet.name == "Лист1"
+        @test sheet.data == DataFrame(
+            "A" => ["Numbers", 1.0, 2.0, 3.0, 4.0, 5.0],
+            "B" => ["Names", "a", "b", "c", "d", "e"],
+        )
+    end
 end

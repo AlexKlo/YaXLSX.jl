@@ -1,5 +1,6 @@
 mutable struct ExcelSheet
-    
+    name::String
+    data::DataFrame
 end
 
 mutable struct ExcelBook
