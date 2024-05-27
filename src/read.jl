@@ -22,39 +22,58 @@ function _read_xml_by_name(zip::ZipFile.Reader, name::String)
     return xml_doc
 end
 
+function _column_letter_to_number(col_letter::AbstractString)
+    col_number = 0
+    length_col = length(col_letter)
+
+    for (i, char) in enumerate(col_letter)
+        col_number += (Int(char) - Int('A') + 1) * 26^(length_col - i)
+    end
+
+    return col_number
+end
+
+function _parse_cell(cell::EzXML.Node, shared_strings::Vector{String})
+
+    t = haskey(cell, "t") ? cell["t"] : ""
+
+    for child_elem in EzXML.eachelement(cell)
+        child_name = EzXML.nodename(child_elem)
+        if child_name == "v"
+            value = EzXML.nodecontent(child_elem)
+            t == "s" && return shared_strings[parse(Int, value) + 1]
+            t == "b" && return value == "TRUE"
+            return parse(Float64, value)
+        elseif child_name == "f"
+            return EzXML.nodecontent(child_elem)
+        end
+    end
+    
+    return nothing
+end
 
 function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sheet_name::String)
     rows = findall("/x:worksheet/x:sheetData/x:row", ws_doc.root, ["x"=>ns])
-
-    col_lengths = zeros(length(rows))
-    for (j, row) in enumerate(rows)
-        col_lengths[j] =  EzXML.findall("x:c", row, ["x"=>ns]) |> length
-    end
-    max_cols = Int(maximum(col_lengths))
-    data = Matrix(undef, length(rows), max_cols)
-    fill!(data, missing)
-    col_names = String[]
-    
+    data = Dict{String, Any}()
+    last_cell_ref = ""
     for row in rows
         cells = EzXML.findall("x:c", row, ["x"=>ns])
 
-        for (col_index, cell) in enumerate(cells)
-            col_name = replace(cell["r"], r"[1-9]"=>"")
-            col_name in col_names || push!(col_names, col_name)
-            row_index = parse(Int, match(r"\d+", cell["r"]).match)
+        for cell in cells
+            cell_ref = cell["r"]
 
-            if EzXML.findfirst("x:v", cell, ["x"=>ns]) !== nothing
-                value = EzXML.nodecontent(EzXML.findfirst("x:v", cell, ["x"=>ns]))
+            cell_content = _parse_cell(cell, shared_strings)
+            isnothing(cell_content) && continue
+            data[cell_ref] = cell_content
 
-                if EzXML.haskey(cell, "t") && EzXML.getindex(cell, "t") == "s"
-                    data[row_index, col_index] = shared_strings[parse(Int, value) + 1]
-                else
-                    data[row_index, col_index] = parse(Float64, value)
-                end
-            end
+            last_cell_ref = cell_ref
         end
     end
-    return ExcelSheet(sheet_name, DataFrame(data, col_names))
+
+    max_rows_n = parse(Int64, match(r"\d+", last_cell_ref).match)
+    max_cols_n = _column_letter_to_number(match(r"[A-Z]+", last_cell_ref).match)
+
+    return ExcelSheet(sheet_name, data, (max_rows_n, max_cols_n))
 end
 
 """
@@ -74,7 +93,6 @@ function parse_xlsx(byte_array::Vector{UInt8})
         sheet["name"] for sheet in EzXML.findall("//x:sheet", wb_doc.root, ["x"=>ns]) 
     ]
 
-    # Чтение sharedStrings.xml
     shared_strings = []
     ss_doc = _read_xml_by_name(zip, "xl/sharedStrings.xml")
     shared_strings = [
@@ -86,7 +104,7 @@ function parse_xlsx(byte_array::Vector{UInt8})
     for (i, name) in enumerate(sheet_names)
         ws_doc = _read_xml_by_name(zip, "xl/worksheets/sheet$(i).xml")
         sheet = _parse_sheet(ws_doc, shared_strings, name)
-        sheets[1] = sheet
+        sheets[i] = sheet
     end
 
     return ExcelBook(io, sheets, sheet_names)

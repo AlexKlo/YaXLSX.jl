@@ -1,6 +1,7 @@
 mutable struct ExcelSheet
     name::String
-    data::DataFrame
+    data::Dict
+    dimension::Tuple{Int64, Int64}
 end
 
 mutable struct ExcelBook
