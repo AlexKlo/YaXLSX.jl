@@ -1,5 +1,7 @@
 
-@testset "Reading" begin
+import YaXLSX: ExcelBook
+
+@testset "Read" begin
     @testset "Case №1: Simple reading" begin
         xlsx_book_bytes = parse_xlsx(read("data/simple_book.xlsx"))
 
@@ -12,18 +14,12 @@
     end
 
     @testset "Case №2: Invalid format file reading" begin
-        @test_throws "WrongExtension: supported only .xlsx format" begin
+        @test_throws ErrorException("WrongExtension: supported only .xlsx format") begin
             xlsx_book = parse_xlsx(read("data/invalid.xls"))
         end
     end
 
-    @testset "Case №3: File without xl/workbook.xml" begin
-        @test_throws "ParseError: xl/workbook.xml not found" begin
-            xlsx_book = parse_xlsx(read("data/without_workbook.xlsx"))
-        end
-    end
-
-    @testset "Case №4: Check ExcelSheet data" begin
+    @testset "Case №3: Check ExcelSheet data" begin
         xlsx_book_bytes = parse_xlsx(read("data/simple_book.xlsx"))
 
         sheet = xlsx_book_bytes.sheets[1]

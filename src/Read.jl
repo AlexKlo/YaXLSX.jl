@@ -95,6 +95,7 @@ function parse_xlsx(byte_array::Vector{UInt8})
 
     shared_strings = []
     ss_doc = _read_xml_by_name(zip, "xl/sharedStrings.xml")
+    @assert !isnothing(ss_doc) "ParseError: xl/sharedStrings.xml not found"
     shared_strings = [
         EzXML.nodecontent(EzXML.findfirst("x:t", si, ["x"=>ns])) 
         for si in EzXML.findall("//x:si", ss_doc.root, ["x"=>ns])
@@ -103,11 +104,12 @@ function parse_xlsx(byte_array::Vector{UInt8})
     sheets = Vector{ExcelSheet}(undef, length(sheet_names))
     for (i, name) in enumerate(sheet_names)
         ws_doc = _read_xml_by_name(zip, "xl/worksheets/sheet$(i).xml")
+        @assert !isnothing(ss_doc) "ParseError: xl/worksheets/sheet$(i).xml not found"
         sheet = _parse_sheet(ws_doc, shared_strings, name)
         sheets[i] = sheet
     end
 
-    return ExcelBook(io, sheets, sheet_names)
+    return ExcelBook(sheets, sheet_names)
 end
 
 """

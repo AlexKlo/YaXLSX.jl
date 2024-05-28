@@ -2,9 +2,10 @@ module YaXLSX
 
 using ZipFile, EzXML, DataFrames
 
-export parse_xlsx, ExcelBook
+export parse_xlsx, xl_sheetnames, xl_sheets
 
-include("types.jl")
-include("read.jl")
+include("Types.jl")
+include("Read.jl")
+include("BookInterfaces.jl")
 
 end
