@@ -3,12 +3,7 @@ const ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 
 function _check_file_format(byte_array::Vector{UInt8})
     header = @view(byte_array[1:4])
-
-    if header == ZIP_FILE_HEADER 
-        return nothing
-    else
-        error("WrongExtension: supported only .xlsx format")
-    end
+    header == ZIP_FILE_HEADER || error("WrongExtension: supported only .xlsx format")
     return nothing
 end
 
@@ -22,21 +17,7 @@ function _read_xml_by_name(zip::ZipFile.Reader, name::String)
     return xml_doc
 end
 
-function _cell_to_indices(cell_ref::AbstractString)
-    row_idx = parse(Int64, match(r"\d+", cell_ref).match)
-
-    col_letter = match(r"[A-Z]+", cell_ref).match
-    col_idx = 0
-    length_col = length(col_letter)
-    for (i, char) in enumerate(col_letter)
-        col_idx += (Int(char) - Int('A') + 1) * 26^(length_col - i)
-    end
-
-    return (row_idx, col_idx)
-end
-
 function _parse_cell(cell::EzXML.Node, shared_strings::Vector{String})
-
     t = haskey(cell, "t") ? cell["t"] : ""
 
     for child_elem in EzXML.eachelement(cell)
@@ -72,13 +53,19 @@ function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sh
         end
     end
 
-    return ExcelSheet(sheet_name, data, _cell_to_indices(last_cell_ref))
+    return ExcelSheet(sheet_name, data)
 end
 
 """
-    parse_xlsx(byte_array::Vector{UInt8})
+    parse_xlsx(byte_array::Vector{UInt8}) -> ExcelBook
 
-Passing a byte array from an XLSX file
+Passing a byte array from an XLSX file.
+
+## Examples
+
+```julia-repl
+julia> parse_xlsx(read("path_to/file.xlsx"))
+```
 """
 function parse_xlsx(byte_array::Vector{UInt8})
     _check_file_format(byte_array)
@@ -86,7 +73,7 @@ function parse_xlsx(byte_array::Vector{UInt8})
     zip = ZipFile.Reader(io)
 
     wb_doc = _read_xml_by_name(zip, "xl/workbook.xml")
-    @assert !isnothing(wb_doc) "ParseError: xl/workbook.xml not found"
+    isnothing(wb_doc) && error("ParseError: xl/workbook.xml not found")
 
     sheet_names = String[ 
         sheet["name"] for sheet in EzXML.findall("//x:sheet", wb_doc.root, ["x"=>ns]) 
@@ -94,7 +81,7 @@ function parse_xlsx(byte_array::Vector{UInt8})
 
     shared_strings = []
     ss_doc = _read_xml_by_name(zip, "xl/sharedStrings.xml")
-    @assert !isnothing(ss_doc) "ParseError: xl/sharedStrings.xml not found"
+    isnothing(ss_doc) && error("ParseError: xl/sharedStrings.xml not found")
     shared_strings = [
         EzXML.nodecontent(EzXML.findfirst("x:t", si, ["x"=>ns])) 
         for si in EzXML.findall("//x:si", ss_doc.root, ["x"=>ns])
@@ -103,7 +90,7 @@ function parse_xlsx(byte_array::Vector{UInt8})
     sheets = Vector{ExcelSheet}(undef, length(sheet_names))
     for (i, name) in enumerate(sheet_names)
         ws_doc = _read_xml_by_name(zip, "xl/worksheets/sheet$(i).xml")
-        @assert !isnothing(ss_doc) "ParseError: xl/worksheets/sheet$(i).xml not found"
+        isnothing(ws_doc) && error("ParseError: xl/worksheets/sheet$(i).xml not found")
         sheet = _parse_sheet(ws_doc, shared_strings, name)
         sheets[i] = sheet
     end
@@ -112,9 +99,15 @@ function parse_xlsx(byte_array::Vector{UInt8})
 end
 
 """
-    parse_xlsx(byte_array::Vector{UInt8})
+    parse_xlsx(byte_array::Vector{UInt8}) -> ExcelBook
 
-Passing an XLSX file from path
+Passing an XLSX file from path.
+
+## Examples
+
+```julia-repl
+julia> parse_xlsx("path_to/file.xlsx")
+```
 """
 function parse_xlsx(path::AbstractString)
     return parse_xlsx(read(path))
