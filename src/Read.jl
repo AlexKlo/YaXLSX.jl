@@ -22,15 +22,17 @@ function _read_xml_by_name(zip::ZipFile.Reader, name::String)
     return xml_doc
 end
 
-function _column_letter_to_number(col_letter::AbstractString)
-    col_number = 0
-    length_col = length(col_letter)
+function _cell_to_indices(cell_ref::AbstractString)
+    row_idx = parse(Int64, match(r"\d+", cell_ref).match)
 
+    col_letter = match(r"[A-Z]+", cell_ref).match
+    col_idx = 0
+    length_col = length(col_letter)
     for (i, char) in enumerate(col_letter)
-        col_number += (Int(char) - Int('A') + 1) * 26^(length_col - i)
+        col_idx += (Int(char) - Int('A') + 1) * 26^(length_col - i)
     end
 
-    return col_number
+    return (row_idx, col_idx)
 end
 
 function _parse_cell(cell::EzXML.Node, shared_strings::Vector{String})
@@ -70,10 +72,7 @@ function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sh
         end
     end
 
-    max_rows_n = parse(Int64, match(r"\d+", last_cell_ref).match)
-    max_cols_n = _column_letter_to_number(match(r"[A-Z]+", last_cell_ref).match)
-
-    return ExcelSheet(sheet_name, data, (max_rows_n, max_cols_n))
+    return ExcelSheet(sheet_name, data, _cell_to_indices(last_cell_ref))
 end
 
 """
