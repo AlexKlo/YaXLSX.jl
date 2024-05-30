@@ -1,4 +1,4 @@
-name: Documentation
+name: Documenter
 
 on:
   push:
@@ -6,7 +6,13 @@ on:
       - main
 
 jobs:
-  build:
+  Documenter:
+    permissions:
+      contents: write
+      statuses: write
+      actions: write
+      pull-requests: write
+    name: Documentatio
     runs-on: ubuntu-latest
 
     steps:

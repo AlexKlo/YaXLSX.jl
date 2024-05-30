@@ -9,3 +9,9 @@ makedocs(
         "Home" => "index.md"
     ],
 )
+
+deploydocs(;
+    repo = "github.com/AlexKlo/YaXLSX.jl",
+    devbranch = "main",
+    push_preview = true,
+)
