@@ -12,6 +12,10 @@ mutable struct ExcelSheet
     data::Dict
 end
 
+function Base.show(io::IO, es::ExcelSheet)
+    print(io, "ExcelSheet($(es.name))")
+end
+
 """
     ExcelBook
 
@@ -24,4 +28,8 @@ Structure with the contents of the .xlsx file returned by the [`parse_xlsx`](@re
 mutable struct ExcelBook
     sheets::Vector{ExcelSheet}
     sheet_names::Vector{String}
+end
+
+function Base.show(io::IO, eb::ExcelBook)
+    print(io, "ExcelBook")
 end
