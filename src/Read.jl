@@ -17,18 +17,74 @@ function _read_xml_by_name(zip::ZipFile.Reader, name::String)
     return xml_doc
 end
 
+function _get_shared_strings(ss_doc::Union{Nothing, EzXML.Document})
+    shared_strings = String[]
+    isnothing(ss_doc) && return shared_strings
+
+    for si in EzXML.findall("//x:si", ss_doc.root, ["x"=>ns])
+        str_content = ""
+
+        for node in EzXML.eachelement(si)
+
+            if EzXML.nodename(node) == "t"
+                str_content *= EzXML.nodecontent(node)
+            elseif EzXML.nodename(node) == "r"
+                for r_node in EzXML.eachelement(node)
+
+                    if EzXML.nodename(r_node) == "t"
+                        str_content *= EzXML.nodecontent(r_node)
+                    end
+                end
+            end
+        end
+        push!(shared_strings, str_content)
+    end
+
+    return shared_strings
+end
+
+function _find_t_node_recursively(node::EzXML.Node)
+    if EzXML.nodename(node) == "t"
+        return node
+    else
+        for child in EzXML.eachelement(node)
+            result = _find_t_node_recursively(child)
+            if result != nothing
+                return result
+            end
+        end
+    end
+
+    return nothing
+end
+
 function _parse_cell(cell::EzXML.Node, shared_strings::Vector{String})
     t = haskey(cell, "t") ? cell["t"] : ""
 
     for child_elem in EzXML.eachelement(cell)
         child_name = EzXML.nodename(child_elem)
-        if child_name == "v"
-            value = EzXML.nodecontent(child_elem)
-            t == "s" && return shared_strings[parse(Int, value) + 1]
-            t == "b" && return value == "TRUE"
-            return parse(Float64, value)
-        elseif child_name == "f"
-            return EzXML.nodecontent(child_elem)
+
+        if t == "inlineStr"
+
+            if child_name == "is"
+                t_node = _find_t_node_recursively(child_elem)
+                if t_node != nothing
+                    return EzXML.nodecontent(t_node)
+                end
+            end
+        else
+            if child_name == "v"
+                value = EzXML.nodecontent(child_elem)
+                t == "s" && return shared_strings[parse(Int, value) + 1]
+                t == "b" && return value == "TRUE"
+                try
+                    return parse(Float64, value)
+                catch
+                    return value
+                end
+            elseif child_name == "f"
+                return EzXML.nodecontent(child_elem)
+            end
         end
     end
     
@@ -79,13 +135,8 @@ function parse_xlsx(byte_array::Vector{UInt8})
         sheet["name"] for sheet in EzXML.findall("//x:sheet", wb_doc.root, ["x"=>ns]) 
     ]
 
-    shared_strings = []
     ss_doc = _read_xml_by_name(zip, "xl/sharedStrings.xml")
-    isnothing(ss_doc) && error("ParseError: xl/sharedStrings.xml not found")
-    shared_strings = [
-        EzXML.nodecontent(EzXML.findfirst("x:t", si, ["x"=>ns])) 
-        for si in EzXML.findall("//x:si", ss_doc.root, ["x"=>ns])
-    ]
+    shared_strings = _get_shared_strings(ss_doc)
 
     sheets = Vector{ExcelSheet}(undef, length(sheet_names))
     for (i, name) in enumerate(sheet_names)

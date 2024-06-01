@@ -65,4 +65,11 @@ import YaXLSX: ExcelBook
             "D8" => 100.0,
         )
     end
+
+    @testset "Case №4: Reading same edge cases" begin
+        @test try parse_xlsx(read("data/blank.xlsx")); true catch; false end
+        @test try parse_xlsx(read("data/book_sparse.xlsx")); true catch; false end
+        @test try parse_xlsx(read("data/inlinestr.xlsx")); true catch; false end
+        @test try parse_xlsx(read("data/style_strings.xlsx")); true catch; false end
+    end
 end
