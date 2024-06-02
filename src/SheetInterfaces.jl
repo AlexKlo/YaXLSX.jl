@@ -21,13 +21,9 @@ end
     return (row_idx, col_idx)
 end
 
-function _get_table(sheet::ExcelSheet, cell_range::AbstractString)
-    left_top, right_bottom = split(cell_range, ":")
-
-    top, left = _cell_to_indices(left_top)
-    bottom, right = _cell_to_indices(right_bottom)
-
-    left <= right && top <= bottom || error("KeyError: invalid cell range `$cell_range`")
+function _get_table(sheet::ExcelSheet, top_left::Tuple, bottom_right::Tuple)
+    top, left = top_left
+    bottom, right = bottom_right
 
     data = Array{Any, 2}(undef, bottom - top + 1, right - left + 1)
     fill!(data, missing)
@@ -45,6 +41,61 @@ function _get_table(sheet::ExcelSheet, cell_range::AbstractString)
     return DataFrame(data, names)
 end
 
+function _cell_range_to_indices(cell_range::UnitRange{Int64}, n_rows::Int64)
+    top = 1
+    left = cell_range.start
+    bottom = n_rows
+    right = cell_range.stop
+
+    left<=right || error("KeyError: invalid cell range `$cell_range`")
+
+    return (top, left), (bottom, right)
+end
+
+function _cell_range_to_indices(cell_range::AbstractString, n_rows::Int64)
+    range = split(cell_range, ":")
+
+    length(range) == 2 || error("KeyError: invalid cell range `$cell_range`")
+
+    top_left, bottom_right = range[1], range[2]
+
+    r1 = r"^\D*$"
+    if occursin(r1, top_left)
+        if occursin(r1, bottom_right)
+            top_left *= "1"
+            bottom_right *= "$n_rows"
+        else
+            error("KeyError: invalid cell range `$cell_range`")
+        end
+    end
+
+    r2 = r"^\d+$"
+    if occursin(r2, top_left)
+        if occursin(r2, bottom_right)
+            l = parse(Int64, top_left)
+            r = parse(Int64, bottom_right)
+            return _cell_range_to_indices(l:r, n_rows)
+        else
+            error("KeyError: invalid cell range `$cell_range`")
+        end
+    end
+    
+    r3 = r"^[A-Z]+[0-9]+$"
+    occursin(r3, top_left) && occursin(r3, bottom_right) || 
+        error("KeyError: invalid cell range `$cell_range`")
+
+    top, left = _cell_to_indices(top_left)
+    bottom, right = _cell_to_indices(bottom_right)
+
+    if iszero(n_rows)
+        left<=right || error("KeyError: invalid cell range `$cell_range`")
+    else
+        left<=right && top<=bottom || error("KeyError: invalid cell range `$cell_range`")
+    end
+
+    return (top, left), (bottom, right)
+end
+
 """
     xl_rowtable(sheet::ExcelSheet, cell_range::AbstractString)
 
@@ -58,10 +109,24 @@ julia> xl_book = parse_xlsx(read("path_to/file.xlsx"))
 julia> xl_sheet = xl_sheets(xl_book, "Sheet1")
 
 julia> xl_rowtable(xl_sheet, "A1:B2")
+
+julia> xl_rowtable(xl_sheet, "A:B")
+
+julia> xl_rowtable(xl_sheet, "1:2")
+
+julia> xl_rowtable(xl_sheet, 1:2)
+
+julia> xl_rowtable(xl_sheet)
 ```
 """
-function xl_rowtable(sheet::ExcelSheet, cell_range::AbstractString)
-    df = _get_table(sheet, cell_range)
+function xl_rowtable(sheet::ExcelSheet, cell_range::Union{AbstractString, UnitRange})
+    top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
+    df = _get_table(sheet, top_left, bottom_right)
+    return df |> eachrow
+end
+
+function xl_rowtable(sheet::ExcelSheet)
+    df = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
     return df |> eachrow
 end
 
@@ -85,14 +150,29 @@ julia> xl_sheet = xl_sheets(xl_book, "Sheet1")
 julia> xl_columntable(xl_sheet, "A1:B2")
 
 julia> xl_columntable(xl_sheet, "A1:B2"; headers=["col1", "col2"])
+
+julia> xl_columntable(xl_sheet, "A:B")
+
+julia> xl_columntable(xl_sheet, "1:2")
+
+julia> xl_columntable(xl_sheet, 1:2)
+
+julia> xl_columntable(xl_sheet)
 ```
 """
 function xl_columntable(
     sheet::ExcelSheet, 
-    cell_range::AbstractString; 
+    cell_range::Union{AbstractString, UnitRange}; 
     headers::Union{Nothing, Vector{String}}=nothing
 )
-    df = _get_table(sheet, cell_range)
+    top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
+    df = _get_table(sheet, top_left, bottom_right)
+    isnothing(headers) || rename!(df, headers)
+    return df |> eachcol
+end
+
+function xl_columntable(sheet::ExcelSheet; headers::Union{Nothing, Vector{String}}=nothing)
+    df = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
     isnothing(headers) || rename!(df, headers)
     return df |> eachcol
 end

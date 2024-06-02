@@ -55,4 +55,52 @@
 
         @test table_cols == exp_df_cols
     end
+
+    @testset "Case №6: get all table data" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+
+        @test xl_rowtable(xl_sheet) isa DataFrames.DataFrameRows
+        @test xl_columntable(xl_sheet) isa DataFrames.DataFrameColumns
+    end
+
+    @testset "Case №7: get data by column names only" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+
+        @test xl_rowtable(xl_sheet, "A:B") isa DataFrames.DataFrameRows
+        @test xl_columntable(xl_sheet, "A:B") isa DataFrames.DataFrameColumns
+    end
+
+    @testset "Case №8: get data by column indices only" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+
+        @test xl_rowtable(xl_sheet, "1:2") isa DataFrames.DataFrameRows
+        @test xl_columntable(xl_sheet, "1:2") isa DataFrames.DataFrameColumns
+    end
+
+    @testset "Case №9: invalid cell range exceptions" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+
+        @test_throws ErrorException("KeyError: invalid cell range `AB`") begin
+            xl_rowtable(xl_sheet, "AB")
+        end
+        @test_throws ErrorException("KeyError: invalid cell range `A1:B`") begin
+            xl_rowtable(xl_sheet, "A1:B")
+        end
+        @test_throws ErrorException("KeyError: invalid cell range `1:B6`") begin
+            xl_rowtable(xl_sheet, "1:B6")
+        end
+        @test_throws ErrorException("KeyError: invalid cell range `3:2`") begin
+            xl_rowtable(xl_sheet, "3:1")
+        end
+        @test_throws ErrorException("KeyError: invalid cell range `a:b`") begin
+            xl_rowtable(xl_sheet, "a:b")
+        end
+        @test_throws ErrorException("KeyError: invalid cell range `A2:B1`") begin
+            xl_rowtable(xl_sheet, "A2:B1")
+        end
+    end
 end

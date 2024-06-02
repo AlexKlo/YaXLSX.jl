@@ -33,6 +33,7 @@ import YaXLSX: ExcelBook
             "A5" => 4.0, "B5" => "d",
             "A6" => 5.0, "B6" => "e",
         )
+        @test sheet.dim == (n_rows=6, n_cols=2)
     end
 
     @testset "Case №4: Reading book with two sheets" begin
@@ -51,6 +52,7 @@ import YaXLSX: ExcelBook
             "A5" => 4.0, "B5" => "d",
             "A6" => 5.0, "B6" => "e",
         )
+        @test sheet1.dim == (n_rows=6, n_cols=2)
 
         sheet2 = xlsx_book_bytes.sheets[2]
         @test sheet2.name == "Лист2"
@@ -64,6 +66,7 @@ import YaXLSX: ExcelBook
             "C7" => "D8/0",
             "D8" => 100.0,
         )
+        @test sheet2.dim == (n_rows=8, n_cols=4)
     end
 
     @testset "Case №4: Reading same edge cases" begin

@@ -109,7 +109,9 @@ function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sh
         end
     end
 
-    return ExcelSheet(sheet_name, data)
+    dims = isempty(last_cell_ref) ? (0,0) : _cell_to_indices(last_cell_ref)
+
+    return ExcelSheet(sheet_name, data, (n_rows=dims[1], n_cols=dims[2]))
 end
 
 """

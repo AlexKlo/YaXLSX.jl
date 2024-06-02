@@ -6,10 +6,12 @@ Structure with the contents of the book sheets contained in ExcelBook structure.
 ## Fields
 - `name::String`: sheet name.
 - `data::Dict`: sheet data.
+- `dim::NamedTuple`: sheet dimensions (n_rows, n_columns).
 """
 mutable struct ExcelSheet
     name::String
     data::Dict
+    dim::NamedTuple
 end
 
 function Base.show(io::IO, es::ExcelSheet)
