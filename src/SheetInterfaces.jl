@@ -5,7 +5,7 @@
         column_name = string(Char(n % 26 + 65)) * column_name
         n = div(n, 26)
     end
-    return column_name
+    return Symbol(column_name)
 end
 
 @inline function _cell_to_indices(cell_ref::AbstractString)
@@ -21,11 +21,27 @@ end
     return (row_idx, col_idx)
 end
 
-function _get_table(sheet::ExcelSheet, top_left::Tuple, bottom_right::Tuple)
+function _get_table(
+    sheet::ExcelSheet, top_left::Tuple,
+    bottom_right::Tuple;
+    headers::Union{Nothing, Vector{String}}=nothing
+)
     top, left = top_left
     bottom, right = bottom_right
 
-    data = Array{Any, 2}(undef, bottom - top + 1, right - left + 1)
+    width = right - left + 1
+    height = bottom - top + 1
+    names = if isnothing(headers)
+        Tuple(_number_to_xl_column(i) for i in left:right)
+    else
+        length(headers) == width || error(
+            "KeyError: headers=$headers length must be equal \
+            to cell range length: $width"
+        )
+        Tuple(Symbol(h) for h in headers)
+    end
+
+    data = Array{Any, 2}(undef, height, width)
     fill!(data, missing)
 
     for (cell_ref, value) in sheet.data
@@ -36,9 +52,8 @@ function _get_table(sheet::ExcelSheet, top_left::Tuple, bottom_right::Tuple)
         rel_col = col - left + 1
         data[rel_row, rel_col] = value
     end
-    names = [_number_to_xl_column(i) for i in left:right]
 
-    return DataFrame(data, names)
+    return NamedTuple{names}(eachcol(data))
 end
 
 function _cell_range_to_indices(cell_range::UnitRange{Int64}, n_rows::Int64)
@@ -121,13 +136,13 @@ julia> xl_rowtable(xl_sheet)
 """
 function xl_rowtable(sheet::ExcelSheet, cell_range::Union{AbstractString, UnitRange})
     top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
-    df = _get_table(sheet, top_left, bottom_right)
-    return df |> eachrow
+    ntp = _get_table(sheet, top_left, bottom_right)
+    return ntp |> Tables.rows
 end
 
 function xl_rowtable(sheet::ExcelSheet)
-    df = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
-    return df |> eachrow
+    ntp = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
+    return ntp |> Tables.rows
 end
 
 
@@ -166,13 +181,11 @@ function xl_columntable(
     headers::Union{Nothing, Vector{String}}=nothing
 )
     top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
-    df = _get_table(sheet, top_left, bottom_right)
-    isnothing(headers) || rename!(df, headers)
-    return df |> eachcol
+    ntp = _get_table(sheet, top_left, bottom_right; headers=headers)
+    return ntp |> Tables.columns
 end
 
 function xl_columntable(sheet::ExcelSheet; headers::Union{Nothing, Vector{String}}=nothing)
-    df = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
-    isnothing(headers) || rename!(df, headers)
-    return df |> eachcol
+    ntp = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols); headers=headers)
+    return ntp |> Tables.columns
 end

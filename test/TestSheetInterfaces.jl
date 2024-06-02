@@ -4,12 +4,9 @@
         xl_sheet = xl_sheets(xl_book, "Лист1")
         table_rows = xl_rowtable(xl_sheet, "A1:B6")
 
-        exp_df_rows = DataFrame(
-            ["Numbers" "Names"; 1.0 "a"; 2.0 "b"; 3.0 "c"; 4.0 "d"; 5.0 "e"],
-            ["A","B"]
-        ) |> eachrow
-
-        @test table_rows == exp_df_rows
+        @test table_rows isa Tables.RowIterator
+        @test table_rows.A == ["Numbers", 1.0, 2.0, 3.0, 4.0, 5.0]
+        @test table_rows.B == ["Names", "a", "b", "c", "d", "e"]
     end
 
     @testset "Case №2: get table not from the beginning" begin
@@ -21,66 +18,51 @@
         @test all(ismissing, table_rows.C)
     end
 
-    @testset "Case №3: invalid cell range" begin
-        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
-        xl_sheet = xl_sheets(xl_book, "Лист1")
-        
-        @test_throws ErrorException("KeyError: invalid cell range `B6:A1`") begin
-            xl_rowtable(xl_sheet, "B6:A1")
-        end
-    end
-
-    @testset "Case №4: get table columns" begin
+    @testset "Case №3: get table columns" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
         table_cols = xl_columntable(xl_sheet, "A1:B6")
 
-        exp_df_cols = DataFrame(
-            ["Numbers" "Names"; 1.0 "a"; 2.0 "b"; 3.0 "c"; 4.0 "d"; 5.0 "e"],
-            ["A","B"]
-        ) |> eachcol
-
-        @test table_cols == exp_df_cols
+        @test table_cols isa NamedTuple
+        @test table_cols.A == ["Numbers", 1.0, 2.0, 3.0, 4.0, 5.0]
+        @test table_cols.B == ["Names", "a", "b", "c", "d", "e"]
     end
 
-    @testset "Case №5: get table columns with specified headers" begin
+    @testset "Case №4: get table columns with specified headers" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
         table_cols = xl_columntable(xl_sheet, "A1:B6"; headers = ["Numbers", "Names"])
 
-        exp_df_cols = DataFrame(
-            ["Numbers" "Names"; 1.0 "a"; 2.0 "b"; 3.0 "c"; 4.0 "d"; 5.0 "e"],
-            ["Numbers", "Names"]
-        ) |> eachcol
-
-        @test table_cols == exp_df_cols
+        @test table_cols isa NamedTuple
+        @test table_cols.var"Numbers" == ["Numbers", 1.0, 2.0, 3.0, 4.0, 5.0]
+        @test table_cols.var"Names" == ["Names", "a", "b", "c", "d", "e"]
     end
 
-    @testset "Case №6: get all table data" begin
+    @testset "Case №5: get all table data" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
 
-        @test xl_rowtable(xl_sheet) isa DataFrames.DataFrameRows
-        @test xl_columntable(xl_sheet) isa DataFrames.DataFrameColumns
+        @test xl_rowtable(xl_sheet) isa Tables.RowIterator
+        @test xl_columntable(xl_sheet) isa NamedTuple
     end
 
-    @testset "Case №7: get data by column names only" begin
+    @testset "Case №6: get data by column names only" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
 
-        @test xl_rowtable(xl_sheet, "A:B") isa DataFrames.DataFrameRows
-        @test xl_columntable(xl_sheet, "A:B") isa DataFrames.DataFrameColumns
+        @test xl_rowtable(xl_sheet, "A:B") isa Tables.RowIterator
+        @test xl_columntable(xl_sheet, "A:B") isa NamedTuple
     end
 
-    @testset "Case №8: get data by column indices only" begin
+    @testset "Case №7: get data by column indices only" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
 
-        @test xl_rowtable(xl_sheet, "1:2") isa DataFrames.DataFrameRows
-        @test xl_columntable(xl_sheet, "1:2") isa DataFrames.DataFrameColumns
+        @test xl_rowtable(xl_sheet, "1:2") isa Tables.RowIterator
+        @test xl_columntable(xl_sheet, "1:2") isa NamedTuple
     end
 
-    @testset "Case №9: invalid cell range exceptions" begin
+    @testset "Case №8: invalid cell range exceptions" begin
         xl_book = parse_xlsx(read("data/simple_book.xlsx"))
         xl_sheet = xl_sheets(xl_book, "Лист1")
 
@@ -101,6 +83,17 @@
         end
         @test_throws ErrorException("KeyError: invalid cell range `A2:B1`") begin
             xl_rowtable(xl_sheet, "A2:B1")
+        end
+    end
+
+    @testset "Case №9: invalind headers length" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+        
+        exp_msg = "KeyError: headers=[\"Numbers\"] length must be equal \
+            to cell range length: 2"
+        @test_throws ErrorException(exp_msg) begin
+            xl_columntable(xl_sheet, "A1:B6"; headers = ["Numbers"])
         end
     end
 end

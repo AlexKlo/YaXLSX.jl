@@ -1,6 +1,6 @@
 using YaXLSX
 using Test
-using DataFrames
+using Tables
 
 include("TestRead.jl")
 include("TestBookInterfaces.jl")
