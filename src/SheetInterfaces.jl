@@ -15,7 +15,7 @@ end
     col_idx = 0
     length_col = length(col_letter)
     for (i, char) in enumerate(col_letter)
-        col_idx += (Int(char) - Int('A') + 1) * 26^(length_col - i)
+        col_idx = (Int(char) - Int('A') + 1) + col_idx * 26
     end
 
     return (row_idx, col_idx)
@@ -41,8 +41,7 @@ function _get_table(
         Tuple(Symbol(h) for h in headers)
     end
 
-    data = Array{Any, 2}(undef, height, width)
-    fill!(data, missing)
+    data = Array{Any, 2}(missing, height, width)
 
     for (cell_ref, value) in sheet.data
         row, col = _cell_to_indices(cell_ref)
@@ -74,33 +73,27 @@ function _cell_range_to_indices(cell_range::AbstractString, n_rows::Int64)
 
     top_left, bottom_right = range[1], range[2]
 
-    r1 = r"^\D*$"
-    if occursin(r1, top_left)
-        if occursin(r1, bottom_right)
-            top_left *= "1"
-            bottom_right *= "$n_rows"
-        else
-            error("KeyError: invalid cell range `$cell_range`")
-        end
-    end
+    r = r"([A-Z]*)(\d*):([A-Z]*)(\d*)"
+    m = match(r, cell_range)
+    if all(!isempty, m.captures)
 
-    r2 = r"^\d+$"
-    if occursin(r2, top_left)
-        if occursin(r2, bottom_right)
-            l = parse(Int64, top_left)
-            r = parse(Int64, bottom_right)
-            return _cell_range_to_indices(l:r, n_rows)
-        else
-            error("KeyError: invalid cell range `$cell_range`")
-        end
-    end
-    
-    r3 = r"^[A-Z]+[0-9]+$"
-    occursin(r3, top_left) && occursin(r3, bottom_right) || 
+        top, left = _cell_to_indices(top_left)
+        bottom, right = _cell_to_indices(bottom_right)
+
+    elseif all(!isempty, m.captures[1:2:end]) && all(isempty, m.captures[2:2:end])
+
+        top, left = _cell_to_indices(top_left*"1")
+        bottom, right = _cell_to_indices(bottom_right*"$n_rows")
+
+    elseif all(isempty, m.captures[1:2:end]) && all(!isempty, m.captures[2:2:end])
+
+        l = parse(Int64, top_left)
+        r = parse(Int64, bottom_right)
+        return _cell_range_to_indices(l:r, n_rows)        
+
+    else
         error("KeyError: invalid cell range `$cell_range`")
-
-    top, left = _cell_to_indices(top_left)
-    bottom, right = _cell_to_indices(bottom_right)
+    end
 
     if iszero(n_rows)
         left<=right || error("KeyError: invalid cell range `$cell_range`")
