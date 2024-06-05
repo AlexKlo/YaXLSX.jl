@@ -1,6 +1,8 @@
 const MAX_COLUMN_NUMBER = 16384
 const MAX_ROW_NUMBER = 1048576
 
+_sheet_dims(sheet::ExcelSheet) = NamedTuple{(:n_rows,:n_cols)}(size(sheet.data))
+
 @inline function _number_to_xl_column(n::Int)
     n, r1 = divrem(n - 1, 26)
     iszero(n) && return string(Char(r1 + 65))
@@ -48,12 +50,10 @@ function _get_table(
     data = Array{Any, 2}(undef, height, width)
 
     for col in left:right
-        letter = _number_to_xl_column(col)
         for row in top:bottom
-            key = letter*string(row)
             rel_row = row - top + 1
             rel_col = col - left + 1
-            data[rel_row, rel_col]= get(sheet.data, key, missing)
+            data[rel_row, rel_col] = get(sheet.data, (row, col), missing)
         end
     end
 
@@ -137,13 +137,13 @@ julia> xl_rowtable(xl_sheet)
 ```
 """
 function xl_rowtable(sheet::ExcelSheet, cell_range::Union{AbstractString, UnitRange})
-    top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
+    top_left, bottom_right = _cell_range_to_indices(cell_range, _sheet_dims(sheet).n_rows)
     ntp = _get_table(sheet, top_left, bottom_right)
     return ntp |> Tables.rows
 end
 
 function xl_rowtable(sheet::ExcelSheet)
-    ntp = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols))
+    ntp = _get_table(sheet, (1, 1), Tuple(_sheet_dims(sheet)))
     return ntp |> Tables.rows
 end
 
@@ -182,12 +182,12 @@ function xl_columntable(
     cell_range::Union{AbstractString, UnitRange}; 
     headers::Union{Nothing, Vector{String}}=nothing
 )
-    top_left, bottom_right = _cell_range_to_indices(cell_range, sheet.dim.n_rows)
+    top_left, bottom_right = _cell_range_to_indices(cell_range, _sheet_dims(sheet).n_rows)
     ntp = _get_table(sheet, top_left, bottom_right; headers=headers)
     return ntp |> Tables.columns
 end
 
 function xl_columntable(sheet::ExcelSheet; headers::Union{Nothing, Vector{String}}=nothing)
-    ntp = _get_table(sheet, (1, 1), (sheet.dim.n_rows, sheet.dim.n_cols); headers=headers)
+    ntp = _get_table(sheet, (1, 1), Tuple(_sheet_dims(sheet)); headers=headers)
     return ntp |> Tables.columns
 end

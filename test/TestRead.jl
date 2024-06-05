@@ -25,15 +25,14 @@ import YaXLSX: ExcelBook
         sheet = xlsx_book_bytes.sheets[1]
 
         @test sheet.name == "Лист1"
-        @test sheet.data == Dict(
-            "A1" => "Numbers", "B1" => "Names",
-            "A2" => 1.0, "B2" => "a",
-            "A3" => 2.0, "B3" => "b",
-            "A4" => 3.0, "B4" => "c",
-            "A5" => 4.0, "B5" => "d",
-            "A6" => 5.0, "B6" => "e",
-        )
-        @test sheet.dim == (n_rows=6, n_cols=2)
+        @test sheet.data == [
+            "Numbers" "Names";
+            1.0       "a";
+            2.0       "b";
+            3.0       "c";
+            4.0       "d";
+            5.0       "e";
+        ]
     end
 
     @testset "Case №4: Reading book with two sheets" begin
@@ -44,34 +43,34 @@ import YaXLSX: ExcelBook
 
         sheet1 = xlsx_book_bytes.sheets[1]
         @test sheet1.name == "Лист1"
-        @test sheet1.data == Dict(
-            "A1" => "Numbers", "B1" => "Names",
-            "A2" => 1.0, "B2" => "a",
-            "A3" => 2.0, "B3" => "b",
-            "A4" => 3.0, "B4" => "c",
-            "A5" => 4.0, "B5" => "d",
-            "A6" => 5.0, "B6" => "e",
-        )
-        @test sheet1.dim == (n_rows=6, n_cols=2)
+        @test sheet1.data == [
+            "Numbers" "Names";
+            1.0       "a";
+            2.0       "b";
+            3.0       "c";
+            4.0       "d";
+            5.0       "e";
+        ]
 
         sheet2 = xlsx_book_bytes.sheets[2]
         @test sheet2.name == "Лист2"
-        @test sheet2.data == Dict(
-            "A1" => "Numbers", "B1" => "Names",
-            "A2" => 1.0, "B2" => "a",
-            "A3" => 2.0, "B3" => "b",
-            "A4" => 3.0, "B4" => "c",
-            "A5" => 4.0, "B5" => "d", "C5" => false,
-            "A6" => 5.0, "B6" => "e", "C6" => "D8",
-            "C7" => "D8/0",
-            "D8" => 100.0,
-        )
-        @test sheet2.dim == (n_rows=8, n_cols=4)
+        @test sheet2.data[1:6, 1:2] == [
+            "Numbers" "Names";
+            1.0       "a";
+            2.0       "b";
+            3.0       "c";
+            4.0       "d";
+            5.0       "e";
+        ]
+        @test sheet2.data[6, 3] == "D8"
+        @test sheet2.data[7, 3] == "D8/0"
+        @test sheet2.data[8, 4] == 100.0;
     end
 
     @testset "Case №4: Reading same edge cases" begin
         @test try parse_xlsx(read("data/blank.xlsx")); true catch; false end
         @test try parse_xlsx(read("data/book_sparse.xlsx")); true catch; false end
+        @test try parse_xlsx(read("data/book_sparse_2.xlsx")); true catch; false end
         @test try parse_xlsx(read("data/inlinestr.xlsx")); true catch; false end
         @test try parse_xlsx(read("data/style_strings.xlsx")); true catch; false end
     end

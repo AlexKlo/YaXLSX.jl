@@ -5,13 +5,11 @@ Structure with the contents of the book sheets contained in ExcelBook structure.
 
 ## Fields
 - `name::String`: sheet name.
-- `data::Dict`: sheet data.
-- `dim::NamedTuple`: sheet dimensions (n_rows, n_columns).
+- `data::Matrix`: sheet data.
 """
 mutable struct ExcelSheet
     name::String
-    data::Dict
-    dim::NamedTuple
+    data::Matrix
 end
 
 function Base.show(io::IO, es::ExcelSheet)

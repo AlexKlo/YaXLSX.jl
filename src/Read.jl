@@ -63,8 +63,11 @@ end
 
 function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sheet_name::String)
     rows = findall("/x:worksheet/x:sheetData/x:row", ws_doc.root, ["x"=>ns])
-    data = Dict{String, Any}()
-    last_cell_ref = ""
+    isempty(rows) && return ExcelSheet(sheet_name, Matrix{Any}(missing, 0, 0))
+
+    data = Tuple[]
+    max_row = 0
+    max_col = 0
     for row in rows
         cells = EzXML.findall("x:c", row, ["x"=>ns])
 
@@ -73,15 +76,20 @@ function _parse_sheet(ws_doc::EzXML.Document, shared_strings::Vector{String}, sh
 
             cell_content = _parse_cell(cell, shared_strings)
             isnothing(cell_content) && continue
-            data[cell_ref] = cell_content
+            r, c = _cell_to_indices(cell_ref)
+            push!(data, (r, c, cell_content))
 
-            last_cell_ref = cell_ref
+            r > max_row && (max_row = r)
+            c > max_col && (max_col = c)
         end
     end
 
-    dims = isempty(last_cell_ref) ? (0,0) : _cell_to_indices(last_cell_ref)
+    matrix = Matrix{Any}(missing, max_row, max_col)
+    for (r, c, value) in data
+        matrix[r, c] = value
+    end
 
-    return ExcelSheet(sheet_name, data, (n_rows=dims[1], n_cols=dims[2]))
+    return ExcelSheet(sheet_name, matrix)
 end
 
 """
