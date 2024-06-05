@@ -75,7 +75,7 @@
         @test_throws ErrorException("KeyError: invalid cell range `1:B6`") begin
             xl_rowtable(xl_sheet, "1:B6")
         end
-        @test_throws ErrorException("KeyError: invalid cell range `3:2`") begin
+        @test_throws ErrorException("KeyError: invalid cell range `3:1`") begin
             xl_rowtable(xl_sheet, "3:1")
         end
         @test_throws ErrorException("KeyError: invalid cell range `a:b`") begin
@@ -94,6 +94,21 @@
             to cell range length: 2"
         @test_throws ErrorException(exp_msg) begin
             xl_columntable(xl_sheet, "A1:B6"; headers = ["Numbers"])
+        end
+    end
+
+    @testset "Case №10: beyond the cell ranges" begin
+        xl_book = parse_xlsx(read("data/simple_book.xlsx"))
+        xl_sheet = xl_sheets(xl_book, "Лист1")
+        
+        exp_msg = "KeyError: column index is too large. Maximum 16384 or XFD"
+        @test_throws ErrorException(exp_msg) begin
+            xl_columntable(xl_sheet, "16380:16385")
+        end
+
+        exp_msg = "KeyError: row index is too large. Maximum 1048576"
+        @test_throws ErrorException(exp_msg) begin
+            xl_rowtable(xl_sheet, "A1:A1048577")
         end
     end
 end

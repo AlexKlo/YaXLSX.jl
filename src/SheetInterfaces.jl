@@ -1,3 +1,6 @@
+const MAX_COLUMN_NUMBER = 16384
+const MAX_ROW_NUMBER = 1048576
+
 @inline function _number_to_xl_column(n::Int)
     n, r1 = divrem(n - 1, 26)
     iszero(n) && return string(Char(r1 + 65))
@@ -89,9 +92,8 @@ function _cell_range_to_indices(cell_range::AbstractString, n_rows::Int64)
 
     elseif all(isempty, m.captures[1:2:end]) && all(!isempty, m.captures[2:2:end])
 
-        l = parse(Int64, top_left)
-        r = parse(Int64, bottom_right)
-        return _cell_range_to_indices(l:r, n_rows)        
+        top, left = 1, parse(Int64, top_left)
+        bottom, right = n_rows, parse(Int64, bottom_right)      
 
     else
         error("KeyError: invalid cell range `$cell_range`")
@@ -102,6 +104,11 @@ function _cell_range_to_indices(cell_range::AbstractString, n_rows::Int64)
     else
         left<=right && top<=bottom || error("KeyError: invalid cell range `$cell_range`")
     end
+
+    (left <= MAX_COLUMN_NUMBER && right <= MAX_COLUMN_NUMBER ) || 
+        error("KeyError: column index is too large. Maximum 16384 or XFD")
+    (top <= MAX_ROW_NUMBER && bottom <= MAX_ROW_NUMBER ) || 
+        error("KeyError: row index is too large. Maximum 1048576")
 
     return (top, left), (bottom, right)
 end
