@@ -1,11 +1,12 @@
 @inline function _number_to_xl_column(n::Int)
-    column_name = ""
-    while n > 0
-        n -= 1
-        column_name = string(Char(n % 26 + 65)) * column_name
-        n = div(n, 26)
-    end
-    return Symbol(column_name)
+    n, r1 = divrem(n - 1, 26)
+    iszero(n) && return string(Char(r1 + 65))
+
+    n, r2 = divrem(n - 1, 26)
+    iszero(n) && return string(Char(r2 + 65), Char(r1 + 65))
+
+    _, r3 = divrem(n - 1, 26)
+    return string(Char(r3 + 65), Char(r2 + 65), Char(r1 + 65))
 end
 
 @inline function _cell_to_indices(cell_ref::AbstractString)
@@ -32,7 +33,7 @@ function _get_table(
     width = right - left + 1
     height = bottom - top + 1
     names = if isnothing(headers)
-        Tuple(_number_to_xl_column(i) for i in left:right)
+        Tuple(Symbol(_number_to_xl_column(i)) for i in left:right)
     else
         length(headers) == width || error(
             "KeyError: headers=$headers length must be equal \
@@ -41,15 +42,16 @@ function _get_table(
         Tuple(Symbol(h) for h in headers)
     end
 
-    data = Array{Any, 2}(missing, height, width)
+    data = Array{Any, 2}(undef, height, width)
 
-    for (cell_ref, value) in sheet.data
-        row, col = _cell_to_indices(cell_ref)
-        top <= row <= bottom || continue
-        left <= col <= right  || continue
-        rel_row = row - top + 1
-        rel_col = col - left + 1
-        data[rel_row, rel_col] = value
+    for col in left:right
+        letter = _number_to_xl_column(col)
+        for row in top:bottom
+            key = letter*string(row)
+            rel_row = row - top + 1
+            rel_col = col - left + 1
+            data[rel_row, rel_col]= get(sheet.data, key, missing)
+        end
     end
 
     return NamedTuple{names}(eachcol(data))
