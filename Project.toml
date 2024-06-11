@@ -3,6 +3,10 @@ uuid = "9db3cc25-22fb-4fcf-aa4a-955ead6cf264"
 authors = ["alexklo9339@gmail.com"]
 version = "1.0.0-DEV"
 
+[deps]
+Serde = "db9b398d-9517-45f8-9a95-92af99003e0e"
+ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+
 [compat]
 julia = "1.6.7"
 
