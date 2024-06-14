@@ -1,6 +1,5 @@
-using YaXLSX
+# runtests
+
 using Test
 
-@testset "YaXLSX.jl" begin
-    # Write your tests here.
-end
+@test 1 == 1

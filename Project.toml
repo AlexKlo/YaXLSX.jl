@@ -1,13 +1,8 @@
 name = "YaXLSX"
-uuid = "9db3cc25-22fb-4fcf-aa4a-955ead6cf264"
-authors = ["alexklo9339@gmail.com"]
-version = "1.0.0-DEV"
+uuid = "e480ba8e-f463-4cde-8758-fb2188e3a719"
+version = "0.1.0"
+
+[deps]
 
 [compat]
-julia = "1.6.7"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+julia = "1.8"

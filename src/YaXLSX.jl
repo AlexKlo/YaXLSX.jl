@@ -1,5 +1,5 @@
 module YaXLSX
 
-# Write your package code here.
+hello() = "Hello, World!"
 
 end
