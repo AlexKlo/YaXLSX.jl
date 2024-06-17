@@ -25,10 +25,21 @@ function xl_sheetnames(x::Workbook)
     return map(x -> x.name, x.sheets.sheet)
 end
 
+
+"""
+    parse_xlsx(x::AbstractString)
+
+
+"""
 function parse_xlsx(x::AbstractString)
     return parse_xlsx(read(x))
 end
 
+"""
+    parse_xlsx(zip_bytes::Vector{UInt8})
+
+
+"""
 function parse_xlsx(zip_bytes::Vector{UInt8})
     check_file_format(zip_bytes)
     files = unzip(zip_bytes)
