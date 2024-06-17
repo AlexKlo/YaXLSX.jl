@@ -21,6 +21,10 @@ function sheet_names(x::Workbook)
     return map(x -> string("sheet", x.sheetId), x.sheets.sheet)
 end
 
+function xl_sheetnames(x::Workbook)
+    return map(x -> x.name, x.sheets.sheet)
+end
+
 function parse_xlsx(x::AbstractString)
     return parse_xlsx(read(x))
 end
@@ -38,9 +42,10 @@ function parse_xlsx(zip_bytes::Vector{UInt8})
     else
         nothing
     end
-    tables = map(s -> get_table(s, shared_strings), sheets)
+    map(x -> setfield!(x, :table, table(x, shared_strings)), sheets)
+    map((x, y) -> setfield!(x, :name, y), sheets, xl_sheetnames(workbook))
 
-    return XLSX(workbook, sheets, tables, shared_strings)
+    return XLSX(workbook, sheets, shared_strings)
 end
 
 #__ Table
@@ -56,7 +61,7 @@ end
     return id - 26 - n + 1
 end
 
-@inline function get_text_string(s::Union{SI, IS})
+@inline function text_string(s::Union{SI, IS})
     str_content = ""
     if !isnothing(s.t)
         str_content *= s.t._
@@ -80,7 +85,7 @@ function max_col_number(sheet)
     return maximum(ref2col(last(x.c).r) for x in sheet.sheetData.row if !isempty(x.c))
 end
 
-function get_table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
+function table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
     isempty(sheet) && return Matrix{Any}(nothing, 0, 0)
 
     max_rows = max_row_number(sheet)
@@ -91,14 +96,14 @@ function get_table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
     for row in sheet.sheetData.row
         for col in row.c
             value = if col.t == "inlineStr"
-                get_text_string(col.is)
+                text_string(col.is)
             elseif isnothing(col.v)
                 nothing 
             elseif col.t == "s"
-                get_text_string(shared_strings.si[parse(Int64, col.v._)+1])
+                text_string(shared_strings.si[parse(Int64, col.v._)+1])
             elseif col.t == "b"
                 col.v._ == "1"
-            elseif col.t in ["str", "e"]
+            elseif col.t == "str" || col.t == "e"
                 col.v._
             else
                 parse(Float64, col.v._)

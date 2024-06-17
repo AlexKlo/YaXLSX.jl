@@ -85,12 +85,17 @@ function Serde.deser(::Type{Rows}, ::Type{Vector{R}}, x::Nothing) where {R<:Row}
     return R[]
 end
 
-struct Sheet
+mutable struct Sheet
     sheetData::Rows
-    #__
+    table::Union{Nothing, Matrix}
+    name::Union{Nothing, String}
 end
 
 Base.isempty(sheet::Sheet) = isempty(sheet.sheetData.row)
+
+function Base.show(io::IO, x::Sheet)
+    return print(io, "Sheet(\"$(x.name)\")")
+end
 
 #__ sharedStrings
 
@@ -122,7 +127,6 @@ end
 struct XLSX
     workbook::Workbook
     sheets::Vector{Sheet}
-    tables::Vector{Matrix}
     shared_strings::Union{Nothing,sharedStrings}
 end
 
