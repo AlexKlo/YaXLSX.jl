@@ -53,24 +53,13 @@ function parse_xlsx(zip_bytes::Vector{UInt8})
     else
         nothing
     end
-    map(x -> setfield!(x, :table, table(x, shared_strings)), sheets)
+    map(x -> setfield!(x, :table, data2table(x, shared_strings)), sheets)
     map((x, y) -> setfield!(x, :name, y), sheets, xl_sheetnames(workbook))
 
     return XLSX(workbook, sheets, shared_strings)
 end
 
 #__ Table
-
-@inline function letter2num(letter::AbstractString)::Int64
-    @assert !isempty(letter)
-    id = 0
-    n = length(letter)
-    for i in eachindex(letter)
-        j = Int64(letter[n-i+1]) - 65 + 1
-        id = id + j + 26
-    end
-    return id - 26 - n + 1
-end
 
 @inline function text_string(s::Union{SI, IS})
     str_content = ""
@@ -96,7 +85,7 @@ function max_col_number(sheet)
     return maximum(ref2col(last(x.c).r) for x in sheet.sheetData.row if !isempty(x.c))
 end
 
-function table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
+function data2table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
     isempty(sheet) && return Matrix{Any}(nothing, 0, 0)
 
     max_rows = max_row_number(sheet)
