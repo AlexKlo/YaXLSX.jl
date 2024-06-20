@@ -2,7 +2,9 @@ module YaXLSX
 
 export parse_xlsx,
     xl_sheetnames,
-    xl_sheets
+    xl_sheets,
+    xl_rowtable,
+    xl_columntable
 
 using Serde, ZipFile
 

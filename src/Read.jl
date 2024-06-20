@@ -29,7 +29,7 @@ end
 """
     parse_xlsx(x::AbstractString)
 
-
+Passing an XLSX file from path.
 """
 function parse_xlsx(x::AbstractString)
     return parse_xlsx(read(x))
@@ -38,7 +38,7 @@ end
 """
     parse_xlsx(zip_bytes::Vector{UInt8})
 
-
+Passing a byte array from an XLSX file.
 """
 function parse_xlsx(zip_bytes::Vector{UInt8})
     check_file_format(zip_bytes)
