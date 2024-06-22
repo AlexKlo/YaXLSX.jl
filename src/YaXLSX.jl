@@ -13,5 +13,6 @@ include("Read.jl")
 include("BookInterfaces.jl")
 include("SheetInterfaces.jl")
 include("Utils.jl")
+include("SampleData.jl")
 
 end

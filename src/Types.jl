@@ -131,5 +131,6 @@ struct XLSX
 end
 
 function Base.show(io::IO, x::XLSX)
-    return print(io, "XLSX with $(length(x.sheets)) sheets")
+    len = length(x.sheets)
+    return print(io, string("XLSX with $len sheet", len==1 ? "" : "s"))
 end
