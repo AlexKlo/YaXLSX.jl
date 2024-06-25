@@ -69,7 +69,7 @@ julia> xl_rowtable(xl_sheets(parse_xlsx(xlsx_simple_table()), 1)) |> DataFrame
    6 │ 5.0      e
 ```
 
-Another feature is that you can use [Serde.jl](https://bhftbootcamp.github.io/Serde.jl/stable/) to serialize data, for example in xml format
+Another feature is that you can use [Serde.jl](https://bhftbootcamp.github.io/Serde.jl/stable/) to serialize data, for example to XML format
 
 ```julia
 using Serde

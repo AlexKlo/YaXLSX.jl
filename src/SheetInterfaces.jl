@@ -120,10 +120,36 @@ function table_labels(l_r::Tuple{Int64, Int64}, column_labels::Vector{String})::
 end
 
 """
-    xl_rowtable(sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing)
+    xl_rowtable(sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing) -> RowTable
+    xl_rowtable(sheet::Sheet; column_labels=nothing) -> RowTable
 
-Getting the rows table from the specified range.
+Get a [`RowTable`](@ref) from [`Sheet`](@ref) by cells or columns range.
+
+```julia-repl
+xl_book = parse_xlsx(xlsx_two_sheets_table())
+
+xl_sheet = xl_sheets(xl_book, 2)
+
+julia> xl_rowtable(xl_sheet, "A1:C3")
+3-element Vector{NamedTuple}:
+ (A = "Numbers", B = "Names", C = nothing)
+ (A = 1.0, B = "a", C = nothing)
+ (A = 2.0, B = "b", C = nothing)
+
+julia> xl_rowtable(xl_sheet, "B:C"; column_labels=["c1", "c2"])
+8-element Vector{NamedTuple}:
+ (c1 = "Names", c2 = nothing)
+ (c1 = "a", c2 = nothing)
+ (c1 = "b", c2 = nothing)
+ (c1 = "c", c2 = nothing)
+ (c1 = "d", c2 = false)
+ (c1 = "e", c2 = "D8")
+ (c1 = nothing, c2 = "D8/0")
+ (c1 = nothing, c2 = nothing)
+```
 """
+function xl_rowtable end
+
 function xl_rowtable(
     sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing
 )
@@ -131,20 +157,42 @@ function xl_rowtable(
     result_table = construct_table(sheet, t_b, l_r)
     labels = table_labels(l_r, column_labels)
 
-    return map(row -> NamedTuple{labels}(row), eachrow(result_table))
+    return RowTable{NamedTuple}(map(row -> NamedTuple{labels}(row), eachrow(result_table)))
 end
 
 function xl_rowtable(sheet::Sheet; column_labels=nothing)
-    rows_n, cols_n = size(sheet.table)
-    t_b, l_r = (1, rows_n), (1, cols_n)
-    result_table = construct_table(sheet, t_b, l_r)
-    labels = table_labels(l_r, column_labels)
+    cols_n = size(sheet.table, 2)
+    labels = table_labels((1, cols_n), column_labels)
 
-    return map(row -> NamedTuple{labels}(row), eachrow(result_table))
+    return RowTable{NamedTuple}(map(row -> NamedTuple{labels}(row), eachrow(sheet.table)))
 end
 
 """
+    xl_columntable(sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing) -> ColumnTable
+    xl_columntable(sheet::Sheet; column_labels=nothing) -> ColumnTable
+
+Get a [`ColumnTable`](@ref) from [`Sheet`](@ref) by cells or columns range.
+
+```julia-repl
+xl_book = parse_xlsx(xlsx_two_sheets_table())
+
+xl_sheet = xl_sheets(xl_book, 2)
+
+julia> xl_columntable(xl_sheet, "1:2")
+(
+    A = Any["Numbers", 1.0, 2.0, 3.0, 4.0, 5.0, nothing, nothing], 
+    B = Any["Names", "a", "b", "c", "d", "e", nothing, nothing]
+)
+
+julia> xl_columntable(xl_sheet, 3:4; column_labels=["C_col", "D_col"])
+(
+    C_col = Any[nothing, nothing, nothing, nothing, false, "D8", "D8/0", nothing], 
+    D_col = Any[nothing, nothing, nothing, nothing, nothing, nothing, nothing, 100.0]
+)
+```
 """
+function xl_columntable end
+
 function xl_columntable(
     sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing
 )
@@ -152,19 +200,12 @@ function xl_columntable(
     result_table = construct_table(sheet, t_b, l_r)
     labels = table_labels(l_r, column_labels)
 
-    return NamedTuple{labels}(eachcol(result_table))
+    return NamedTuple{labels}(eachcol(result_table))::ColumnTable
 end
 
-"""
-    xl_columntable(sheet::Sheet, s::Union{UnitRange, AbstractString}; column_labels=nothing)
-
-Getting the columns table from the specified range.
-"""
 function xl_columntable(sheet::Sheet; column_labels=nothing)
-    rows_n, cols_n = size(sheet.table)
-    t_b, l_r = (1, rows_n), (1, cols_n)
-    result_table = construct_table(sheet, t_b, l_r)
-    labels = table_labels(l_r, column_labels)
+    cols_n = size(sheet.table, 2)
+    labels = table_labels((1, cols_n), column_labels)
 
-    return NamedTuple{labels}(eachcol(result_table))
+    return NamedTuple{labels}(eachcol(sheet.table))::ColumnTable
 end

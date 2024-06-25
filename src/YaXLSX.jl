@@ -1,9 +1,20 @@
 module YaXLSX
 
-export parse_xlsx,
-    xl_sheetnames,
-    xl_sheets,
-    xl_rowtable,
+# Types.jl
+export XLSX,
+    Sheet,
+    RowTable,
+    ColumnTable
+
+# Read.jl
+export parse_xlsx
+
+# BookInterfaces.jl
+export xl_sheetnames,
+    xl_sheets
+
+# SheetInterfaces.jl
+export xl_rowtable,
     xl_columntable
 
 using Serde, ZipFile

@@ -31,6 +31,10 @@ struct CellText
     _::String
 end
 
+struct CellFormula
+    _::Union{Nothing,String}
+end
+
 function Serde.deser(::Type{CellText}, ::Type{String}, x::Nothing)
     return ""
 end
@@ -58,6 +62,7 @@ struct Cell
     r::String
     s::Union{Nothing,Int64}
     is::Union{Nothing, IS}
+    f::Union{Nothing,CellFormula}
 end
 
 struct Row
@@ -85,6 +90,16 @@ function Serde.deser(::Type{Rows}, ::Type{Vector{R}}, x::Nothing) where {R<:Row}
     return R[]
 end
 
+"""
+    Sheet
+
+Structure with the contents of the book sheets contained in [`XLSX`](@ref) structure.
+
+## Fields
+- `sheetData::Rows`: sheet data.
+- `table::Union{Nothing, Matrix}`: sheet data in matrix form.
+- `name::Union{Nothing, String}`: sheet name.
+"""
 mutable struct Sheet
     sheetData::Rows
     table::Union{Nothing, Matrix}
@@ -123,7 +138,19 @@ function Serde.deser(::Type{sharedStrings}, ::Type{Vector{S}}, x::AbstractDict) 
 end
 
 #__ XLSX
+"""
+    XLSX
 
+Structure with the contents of the XLSX file returned by the [`parse_xlsx`](@ref) function.
+
+## Fields
+- `workbook::Workbook`: XLSX file content.
+- `sheets::Vector{Sheet}`: vector of book sheets.
+- `shared_strings::Union{Nothing,sharedStrings}`: shared strings content.
+
+## Accessors
+- `xl_sheets(xl_book::XLSX)` -> `xl_book.sheets`
+"""
 struct XLSX
     workbook::Workbook
     sheets::Vector{Sheet}
@@ -134,3 +161,20 @@ function Base.show(io::IO, x::XLSX)
     len = length(x.sheets)
     return print(io, string("XLSX with $len sheet", len==1 ? "" : "s"))
 end
+
+#__ Tabular data
+
+"""
+    RowTable <: AbstractVector{<:NamedTuple}
+
+Tabular data type that accepts NamedTuple vector and implements a row table.
+"""
+const RowTable = AbstractVector{T} where {T<:NamedTuple}
+
+"""
+    ColumnTable <: NamedTuple
+
+Tabular data type that accepts NamedTuple and implements a column table.
+"""
+const ColumnTable = NamedTuple{names,T} where 
+    {names,T<:NTuple{N,AbstractArray{S,D} where S}} where {N,D}

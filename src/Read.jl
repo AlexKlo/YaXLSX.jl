@@ -27,22 +27,27 @@ end
 
 
 """
-    parse_xlsx(x::AbstractString)
+    parse_xlsx(x::AbstractString) -> XLSX
+    parse_xlsx(x::Vector{UInt8}) -> XLSX
 
-Passing an XLSX file from path.
+Parse a XLSX file into a structure of type [`XLSX`](@ref).
+
+## Examples
+
+```julia-repl
+julia> xl_book = parse_xlsx(xlsx_simple_table())
+XLSX with 1 sheet
+```
 """
+function parse_xlsx end
+
 function parse_xlsx(x::AbstractString)
     return parse_xlsx(read(x))
 end
 
-"""
-    parse_xlsx(zip_bytes::Vector{UInt8})
-
-Passing a byte array from an XLSX file.
-"""
-function parse_xlsx(zip_bytes::Vector{UInt8})
-    check_file_format(zip_bytes)
-    files = unzip(zip_bytes)
+function parse_xlsx(x::Vector{UInt8})
+    check_file_format(x)
+    files = unzip(x)
     workbook = deser_xml(Workbook, files["xl/workbook.xml"])
     sheets = map(
         x -> deser_xml(Sheet, files["xl/worksheets/$(x).xml"]),
@@ -97,6 +102,8 @@ function data2table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
         for col in row.c
             value = if col.t == "inlineStr"
                 text_string(col.is)
+            elseif !isnothing(col.f)
+                isnothing(col.v) ? col.f._ : col.v._
             elseif isnothing(col.v)
                 nothing 
             elseif col.t == "s"
