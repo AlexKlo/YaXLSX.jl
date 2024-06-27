@@ -12,8 +12,8 @@ function is_valid_index_range(m::Union{Nothing, RegexMatch})
     all(isempty, @view(m.captures[1:2:end])) && 
         all(!isempty, @view(m.captures[2:2:end])) || return false
     
-    l = letter2num(m[2])
-    r = letter2num(m[4])
+    l = parse(Int64, m[2])
+    r = parse(Int64, m[4])
 
     l <= r || return false
     l <= MAX_COLUMN_NUMBER && r <= MAX_COLUMN_NUMBER || return false
