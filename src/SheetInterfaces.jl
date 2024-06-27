@@ -1,5 +1,8 @@
 # SheetInterfaces
 
+const MAX_COLUMN_NUMBER = 16384
+const MAX_ROW_NUMBER = 1048576
+
 function is_valid_index_range(r::UnitRange{Int64})
     return r.start <= r.stop
 end
@@ -12,7 +15,8 @@ function is_valid_index_range(m::Union{Nothing, RegexMatch})
     l = letter2num(m[2])
     r = letter2num(m[4])
 
-    is_valid_index_range(l:r) || return false
+    l <= r || return false
+    l <= MAX_COLUMN_NUMBER && r <= MAX_COLUMN_NUMBER || return false
 
     return true
 end
@@ -27,6 +31,8 @@ function is_valid_cell_range(m::Union{Nothing, RegexMatch})
     b = parse(Int64, m[4])
 
     l <= r && t <= b || return false
+    l <= MAX_COLUMN_NUMBER && r <= MAX_COLUMN_NUMBER || return false
+    t <= MAX_ROW_NUMBER && b <= MAX_ROW_NUMBER || return false
 
     return true
 end
@@ -40,6 +46,7 @@ function is_valid_column_name_range(m::Union{Nothing, RegexMatch})
     r = letter2num(m[3])
 
     l <= r || return false
+    l <= MAX_COLUMN_NUMBER && r <= MAX_COLUMN_NUMBER || return false
 
     return true
 end

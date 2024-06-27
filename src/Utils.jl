@@ -2,12 +2,10 @@
 
 @inline function letter2num(letter::AbstractString)::Int64
     id = 0
-    n = length(letter)
-    for i in eachindex(letter)
-        j = Int64(letter[n-i+1]) - 65 + 1
-        id = id + j + 26
+    for char in letter
+        id = (Int64(char) - 65 + 1) + id * 26
     end
-    return id - 26 - n + 1
+    return id
 end
 
 @inline function num2letter(n::Int)::String

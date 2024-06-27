@@ -104,7 +104,7 @@ function data2table(sheet::Sheet, shared_strings::Union{Nothing, sharedStrings})
                 text_string(col.is)
             elseif !isnothing(col.f)
                 isnothing(col.v) ? col.f._ : col.v._
-            elseif isnothing(col.v)
+            elseif isnothing(col.v) || isnothing(col.v._)
                 nothing 
             elseif col.t == "s"
                 text_string(shared_strings.si[parse(Int64, col.v._)+1])
