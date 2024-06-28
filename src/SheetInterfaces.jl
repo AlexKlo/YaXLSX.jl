@@ -4,7 +4,10 @@ const MAX_COLUMN_NUMBER = 16384
 const MAX_ROW_NUMBER = 1048576
 
 function is_valid_index_range(r::UnitRange{Int64})
-    return r.start <= r.stop
+    r.start <= r.stop || return false
+    r.start <= MAX_COLUMN_NUMBER && r.stop <= MAX_COLUMN_NUMBER || return false
+
+    return true
 end
 
 function is_valid_index_range(m::Union{Nothing, RegexMatch})

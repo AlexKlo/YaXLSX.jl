@@ -58,8 +58,10 @@ function parse_xlsx(x::Vector{UInt8})
     else
         nothing
     end
-    map(x -> setfield!(x, :table, data2table(x, shared_strings)), sheets)
-    map((x, y) -> setfield!(x, :name, y), sheets, xl_sheetnames(workbook))
+    for (sheet, name) in zip(sheets, xl_sheetnames(workbook)) 
+        setfield!(sheet, :table, data2table(sheet, shared_strings))
+        setfield!(sheet, :name, name) 
+    end
 
     return XLSX(workbook, sheets, shared_strings)
 end
@@ -79,7 +81,7 @@ end
 end
 
 @inline function ref2col(ref::String)
-    return letter2num(match(r"\D+", ref).match)
+    return letter2num(@view ref[findfirst(r"\D+", ref)])
 end
 
 function max_row_number(sheet)

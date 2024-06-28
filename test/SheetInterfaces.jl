@@ -103,6 +103,9 @@
         @test_throws ErrorException("KeyError: invalid range `16380:16385`") begin
             xl_columntable(xl_sheet, "16380:16385")
         end
+        @test_throws ErrorException("KeyError: invalid range `16380:16385`") begin
+            xl_columntable(xl_sheet, 16380:16385)
+        end
         @test_throws ErrorException("KeyError: invalid range `A1:A1048577`") begin
             xl_columntable(xl_sheet, "A1:A1048577")
         end
