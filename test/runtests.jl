@@ -1,5 +1,7 @@
 # runtests
-
+using YaXLSX
 using Test
 
-@test 1 == 1
+include("Read.jl")
+include("BookInterfaces.jl")
+include("SheetInterfaces.jl")
